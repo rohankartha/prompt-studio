@@ -3,7 +3,7 @@ import {
     SidebarInset,
     SidebarProvider,
     SidebarTrigger,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/shdcn/sidebar";
 
 export default function DashboardLayout({
     children,

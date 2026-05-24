@@ -1,14 +1,14 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/shdcn/button";
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/shdcn/card";
+import { Input } from "@/components/ui/shdcn/input";
+import { Label } from "@/components/ui/shdcn/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
@@ -16,7 +16,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/shdcn/select";
 import { useState } from "react";
 
 
@@ -24,22 +24,53 @@ export function PromptEditor() {
 
     // Variables to hold form data
     const [promptName, setPromptName] = useState("");
-    const [promptBody, setPromptBody] = useState("");
+    const [systemPrompt, setSystemPrompt] = useState("");
     const [testInput, setTestInput] = useState("");
     const [model, setModel] = useState("");
 
-    function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
+    async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
         event.preventDefault();
-        console.log({
+
+        // const payload = {
+        //     promptName,
+        //     promptBody,
+        //     testInput,
+        //     model
+        // }
+
+        // await fetch("/api/prompts", {
+        //     method: "POST",
+        //     headers: {
+        //         "Content-Type": "application/json"
+        //     },
+        //     body: JSON.stringify(payload)
+        // });
+
+        // setPromptName("");
+        // setPromptBody("");
+        // setTestInput("");
+        // setModel("");
+    }
+
+    async function savePrompt() {
+
+        const payload = {
             promptName,
-            promptBody,
+            systemPrompt,
             testInput,
-            model,
+            model
+        }
+
+        await fetch("/api/prompts", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
         });
-        console.log("submitted");
 
         setPromptName("");
-        setPromptBody("");
+        setSystemPrompt("");
         setTestInput("");
         setModel("");
     }
@@ -62,87 +93,89 @@ export function PromptEditor() {
                         </h1>
                     </div>
 
-                    <Button variant="outline">
+                    <Button 
+                    variant="outline"
+                    onClick={savePrompt}>
                         Save Prompt
                     </Button>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
                     <Card>
-                        
 
-                        
+
+
                         <CardHeader>
                             <CardTitle>Configuration</CardTitle>
                         </CardHeader>
 
                         <form onSubmit={handleSubmit}>
 
-                        <CardContent className="space-y-5">
+                            <CardContent className="space-y-5">
 
-                            {/* Prompt name input */}
-                            <div className="space-y-2">
-                                <Label>Prompt name</Label>
-                                <Input 
-                                    placeholder="e.g. Customer Support Assistant"
-                                    value={promptName}
-                                    onChange={(e) => setPromptName(e.target.value)}
-                                     />
-                            </div>
-
-
-                            {/* System prompt input */}
-                            <div className="space-y-2">
-                                <Label>System prompt</Label>
-                                <Textarea
-                                    className="min-h-48 resize-none"
-                                    placeholder="You are a helpful customer support agent..."
-                                    value={promptBody}
-                                    onChange={(e) => setPromptBody(e.target.value)}
-                                />
-                            </div>
-
-                            {/* Test input */}
-                            <div className="space-y-2">
-                                <Label>Test input</Label>
-                                <Textarea
-                                    className="min-h-32 resize-none"
-                                    placeholder="I was charged twice this month."
-                                    value={testInput}
-                                    onChange={(e) => setTestInput(e.target.value)}
-                                />
-                            </div>
+                                {/* Prompt name input */}
+                                <div className="space-y-2">
+                                    <Label>Prompt name</Label>
+                                    <Input
+                                        placeholder="e.g. Customer Support Assistant"
+                                        value={promptName}
+                                        onChange={(e) => setPromptName(e.target.value)}
+                                    />
+                                </div>
 
 
-                            {/* Choose model input */}
-                            <div className="space-y-2">
-                                <Label>Model</Label>
-                                <Select
-                                    value={model}
-                                    onValueChange={(model) => setModel(model)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Choose a model" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="gpt-4o-mini">
-                                            GPT-4o Mini
-                                        </SelectItem>
-                                        <SelectItem value="gpt-4o">
-                                            GPT-4o
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                {/* System prompt input */}
+                                <div className="space-y-2">
+                                    <Label>System prompt</Label>
+                                    <Textarea
+                                        className="min-h-48 resize-none"
+                                        placeholder="You are a helpful customer support agent..."
+                                        value={systemPrompt}
+                                        onChange={(e) => setSystemPrompt(e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Test input */}
+                                <div className="space-y-2">
+                                    <Label>Test input</Label>
+                                    <Textarea
+                                        className="min-h-32 resize-none"
+                                        placeholder="I was charged twice this month."
+                                        value={testInput}
+                                        onChange={(e) => setTestInput(e.target.value)}
+                                    />
+                                </div>
+
+
+                                {/* Choose model input */}
+                                <div className="space-y-2">
+                                    <Label>Model</Label>
+                                    <Select
+                                        value={model}
+                                        onValueChange={(model) => setModel(model)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Choose a model" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="gpt-4o-mini">
+                                                GPT-4o Mini
+                                            </SelectItem>
+                                            <SelectItem value="gpt-4o">
+                                                GPT-4o
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
 
 
-                            {/* Run prompt button */}
-                            <Button className="w-full">
-                                Run Prompt
-                            </Button>
+                                {/* Run prompt button */}
+                                <Button className="w-full">
+                                    Run Prompt
+                                </Button>
 
 
-                        </CardContent>
+                            </CardContent>
                         </form>
                     </Card>
 

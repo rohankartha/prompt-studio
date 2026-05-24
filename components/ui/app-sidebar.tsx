@@ -1,44 +1,66 @@
+"use client";
+
 import {
     Sidebar,
     SidebarContent,
     SidebarGroup,
+    SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/shdcn/sidebar";
 
 import Link from "next/link";
+import { FileText, Database, BarChart3 } from "lucide-react";
+
+const items = [
+    {
+        title: "Prompts",
+        href: "/dashboard/prompts",
+        icon: FileText,
+    },
+    {
+        title: "Datasets",
+        href: "/dashboard/datasets",
+        icon: Database,
+    },
+    {
+        title: "Evaluations",
+        href: "/dashboard/evaluations",
+        icon: BarChart3,
+    },
+];
 
 export function AppSidebar() {
     return (
         <Sidebar>
-            <SidebarContent>
+            <SidebarContent className="bg-muted">
+                <div className="px-4 py-6">
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Prompt Studio
+                    </h1>
+                    <p className="mt-1 text-sm">
+                        Evaluate prompts and datasets
+                    </p>
+                </div>
+
                 <SidebarGroup>
-                    <SidebarMenu>
 
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
-                                <Link href="/dashboard/prompts">
-                                    Prompts
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
 
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
-                                <Link href="/dashboard/datasets">
-                                    Datasets
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
-                                <Link href="/dashboard/evaluations">
-                                    Evaluations
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
+                    <SidebarMenu className="space-y-1 px-2">
+                        {items.map((item) => (
+                            <SidebarMenuItem key={item.href}>
+                                <SidebarMenuButton
+                                    asChild
+                                    className="h-11 text-base rounded-lg hover:bg-zinc-800 hover:text-white"
+                                >
+                                    <Link href={item.href}>
+                                        <item.icon className="!h-6 !w-6" />
+                                        <span className="ml-5">{item.title}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>

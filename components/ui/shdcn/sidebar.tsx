@@ -6,16 +6,16 @@ import { Slot } from "radix-ui"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/shdcn/button"
+import { Input } from "@/components/ui/shdcn/input"
+import { Separator } from "@/components/ui/shdcn/separator"
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
+} from "@/components/ui/shdcn/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
