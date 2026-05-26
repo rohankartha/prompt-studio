@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/shdcn/sidebar";
 
 import Link from "next/link";
-import { FileText, Database, BarChart3 } from "lucide-react";
+import { FileText, Database, BarChart3, Key } from "lucide-react";
 
 const items = [
     {
@@ -28,6 +28,11 @@ const items = [
         title: "Evaluations",
         href: "/dashboard/evaluations",
         icon: BarChart3,
+    },
+    {
+        title: "Keys",
+        href: "/dashboard/keys",
+        icon: Key,
     },
 ];
 
