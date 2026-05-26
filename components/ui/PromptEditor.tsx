@@ -18,6 +18,7 @@ import {
     SelectValue,
 } from "@/components/ui/shdcn/select";
 import { useState } from "react";
+import { useEffect } from "react";
 
 
 export function PromptEditor() {
@@ -27,29 +28,26 @@ export function PromptEditor() {
     const [systemPrompt, setSystemPrompt] = useState("");
     const [testInput, setTestInput] = useState("");
     const [model, setModel] = useState("");
+    const [testDataset, setTestDataset] = useState("");
+
+
+
+
+    type Dataset = {
+        id: string,
+        name: string
+    }
+
+
+
+
+
+    const [datasets, setDatasets] = useState<Dataset[]>([]);
+
+
 
     async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
         event.preventDefault();
-
-        // const payload = {
-        //     promptName,
-        //     promptBody,
-        //     testInput,
-        //     model
-        // }
-
-        // await fetch("/api/prompts", {
-        //     method: "POST",
-        //     headers: {
-        //         "Content-Type": "application/json"
-        //     },
-        //     body: JSON.stringify(payload)
-        // });
-
-        // setPromptName("");
-        // setPromptBody("");
-        // setTestInput("");
-        // setModel("");
     }
 
     async function savePrompt() {
@@ -77,6 +75,32 @@ export function PromptEditor() {
 
 
 
+    useEffect(() => {
+
+        async function getDatasetNames() {
+
+            const response = await fetch("/api/datasets", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const datasets = await response.json();
+
+
+            console.log(datasets);
+            setDatasets(datasets);
+        }
+        getDatasetNames();
+
+    }, [])
+
+
+
+
+
+
 
 
 
@@ -93,9 +117,9 @@ export function PromptEditor() {
                         </h1>
                     </div>
 
-                    <Button 
-                    variant="outline"
-                    onClick={savePrompt}>
+                    <Button
+                        variant="outline"
+                        onClick={savePrompt}>
                         Save Prompt
                     </Button>
                 </div>
@@ -145,6 +169,40 @@ export function PromptEditor() {
                                         onChange={(e) => setTestInput(e.target.value)}
                                     />
                                 </div>
+
+
+
+
+                                {/* Choose test dataset */}
+                                <div className="space-y-2">
+                                    <Label>Test dataset</Label>
+                                    <Select
+                                        value={testDataset}
+                                        onValueChange={(dataset) => setTestDataset(dataset)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Choose test dataset" />
+                                        </SelectTrigger>
+
+
+
+                                        <SelectContent>
+                                            {datasets.map((dataset) => (
+                                                <SelectItem
+                                                    key={dataset.id}
+                                                    value={dataset.name}
+                                                >
+                                                    {dataset.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+
+
+
+
+
 
 
                                 {/* Choose model input */}
