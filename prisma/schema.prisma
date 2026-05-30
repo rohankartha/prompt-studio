@@ -15,29 +15,82 @@ datasource db {
 }
 
 model Prompt {
-    id           String @id @default(cuid())
-    userId       String
-    promptName   String
-    systemPrompt String
-    testInput    String
-    model        String
+    id      String @id @default(cuid())
+    userId  String
+    name    String
+    content String
+    version Int    @default(1)
+    runs    Run[]
 }
 
 model Dataset {
-    id          String   @id @default(cuid())
-    name        String
-    rows        Json?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    id              String   @id @default(cuid())
+    userId          String
+    name            String
+    rows            Json?
+    version         Int      @default(1)
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+    numberOfEntries Int      @default(0)
+    runs            Run[]
 }
 
 model UserApiKey {
-  id              String   @id @default(cuid())
-  userId          String
-  provider        String
-  encryptedApiKey String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+    id              String   @id @default(cuid())
+    userId          String
+    provider        String
+    encryptedApiKey String
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
 
-  @@unique([userId, provider])
+    @@unique([userId, provider])
+}
+
+model Run {
+    id String @id @default(cuid())
+
+    promptId String
+    prompt   Prompt @relation(fields: [promptId], references: [id])
+
+    datasetId String
+    dataset   Dataset @relation(fields: [datasetId], references: [id])
+
+    evaluations Evaluation[]
+    output      String[]
+    latencyMs   Float
+    tokensIn    Int
+    tokensOut   Int
+}
+
+// Status | Prompt | Version | Dataset | Judge | Score | Failures | Cost | Created
+
+model Evaluation {
+    id String @id @default(cuid())
+
+    runId String
+    run   Run    @relation(fields: [runId], references: [id])
+
+    judgeId String
+    judge   Judge  @relation(fields: [judgeId], references: [id])
+
+    judgeScore     Float[]
+    passed         Boolean[]
+    judgeReasoning Json[]
+}
+
+enum JudgeType {
+    EXACT_MATCH
+    LLM
+    JSON_SCHEMA
+    REGEX
+    SEMANTIC_SIMILARITY
+    SAFETY
+}
+
+model Judge {
+    id          String       @id @default(cuid())
+    name        String
+    type        JudgeType
+    rubric      String?
+    evaluations Evaluation[]
 }

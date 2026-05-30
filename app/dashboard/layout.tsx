@@ -14,12 +14,12 @@ export default function DashboardLayout({
         <SidebarProvider>
             <AppSidebar />
 
-            <SidebarInset>
-                <header className="flex h-16 items-center border-b px-4">
+            <SidebarInset className="bg-zinc-50">
+                <header className="flex h-10 items-center border-b border-zinc-200 bg-zinc-50 px-4">
                     <SidebarTrigger />
                 </header>
 
-                <main className="p-6">
+                <main className="min-h-screen bg-zinc-50 p-8">
                     {children}
                 </main>
             </SidebarInset>

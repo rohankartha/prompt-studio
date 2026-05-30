@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: Request) {
 
-    
+export async function POST(req: Request) {
 
     const body = await req.json();
     const { userId } = await auth();
@@ -12,29 +11,55 @@ export async function POST(req: Request) {
     if (!userId) {
         return NextResponse.json(
             { error: "Unauthorized" },
-            { status: 401}
+            { status: 401 }
+        );
+    };
+
+    const checkExistingPrompt = await prisma.prompt.findFirst({
+        where: {
+            name: body["name"],
+        },
+    });
+
+    if (checkExistingPrompt) {
+        return NextResponse.json(
+            { error: "Prompt with name already exists" },
+            { status: 409 }
         );
     }
 
-    // console.log(body);
-    // console.log(userId);
-
     const prompt = await prisma.prompt.create({
         data: {
-            promptName: body["promptName"],
-            systemPrompt: body["systemPrompt"],
-            testInput: body["testInput"],
-            model: body["model"],
-            userId: userId
+            name: body["name"],
+            content: body["content"],
+            userId: userId,
+            version: body["version"]
         }
     });
 
-    console.log(prompt);
+    return NextResponse.json(prompt);
+}
 
-    
 
-    return NextResponse.json({
-        success: true
+
+
+
+
+
+
+
+export async function GET() {
+
+    const prompts = await prisma.prompt.findMany({
+        select: {
+            id: true,
+            name: true,
+            version: true
+        }
     });
+
+    return NextResponse.json(prompts);
+
+
 
 }

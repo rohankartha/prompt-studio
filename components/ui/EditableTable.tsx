@@ -113,187 +113,156 @@ export function EditableTable<
     });
 
     return (
-        <div>
-
-            {/* Save button */}
-            <div className="flex justify-end mb-2">
-                <Button className="gap-2" onClick={saveTable}>
-                    <Save className="h-4 w-4" />
-                    Save
-                </Button>
+    <div className="space-y-4">
+        <div className="flex items-center justify-between rounded-2xl border bg-white px-5 py-4 shadow-sm">
+            <div>
+                <h3 className="text-base font-semibold text-zinc-950">
+                    Dataset Editor
+                </h3>
+                <p className="text-sm text-zinc-500">
+                    Click any cell to edit. Add rows as needed, then save changes.
+                </p>
             </div>
 
+            <Button
+                onClick={saveTable}
+                className="gap-2 rounded-xl bg-zinc-950 px-4 shadow-sm hover:bg-zinc-800"
+            >
+                <Save className="h-4 w-4" />
+                Save Changes
+            </Button>
+        </div>
 
+        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b bg-zinc-50/80 px-5 py-3">
+                <p className="text-sm font-medium text-zinc-700">
+                    {tableData.length} rows
+                </p>
 
+                <button
+                    className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-950"
+                    onClick={addRow}
+                >
+                    Add Row
+                </button>
+            </div>
 
-
-            <div className="overflow-hidden rounded-md border">
-                <div className="flex justify-end border-b p-2">
-                    <button
-                        className="rounded-md border px-3 py-1 text-sm hover:bg-muted"
-                        onClick={addRow}
-                    >
-                        Add Row
-                    </button>
-                </div>
-
-                <Table>
-                    <TableHeader>
-                        {table
-                            .getHeaderGroups()
-                            .map((headerGroup) => (
-                                <TableRow
-                                    key={headerGroup.id}
+            <Table>
+                <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow
+                            key={headerGroup.id}
+                            className="border-b bg-zinc-50/60 hover:bg-zinc-50/60"
+                        >
+                            {headerGroup.headers.map((header) => (
+                                <TableHead
+                                    key={header.id}
+                                    className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500"
                                 >
-                                    {headerGroup.headers.map(
-                                        (header) => (
-                                            <TableHead
-                                                key={header.id}
-                                            >
-                                                {header.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                        header
-                                                            .column
-                                                            .columnDef
-                                                            .header,
-                                                        header.getContext()
-                                                    )}
-                                            </TableHead>
-                                        )
-                                    )}
-
-                                    <TableHead>
-                                        Actions
-                                    </TableHead>
-                                </TableRow>
+                                    {header.isPlaceholder
+                                        ? null
+                                        : flexRender(
+                                              header.column.columnDef.header,
+                                              header.getContext()
+                                          )}
+                                </TableHead>
                             ))}
-                    </TableHeader>
 
-                    <TableBody>
-                        {table.getRowModel().rows
-                            ?.length ? (
-                            table
-                                .getRowModel()
-                                .rows.map((row) => (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={
-                                            row.getIsSelected() &&
-                                            "selected"
-                                        }
-                                    >
-                                        {row
-                                            .getVisibleCells()
-                                            .map((cell) => {
-                                                const isEditing =
-                                                    editingCell?.row ===
-                                                    row.index &&
-                                                    editingCell?.column ===
-                                                    cell
-                                                        .column
-                                                        .id
+                            <TableHead className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                Actions
+                            </TableHead>
+                        </TableRow>
+                    ))}
+                </TableHeader>
 
-                                                return (
-                                                    <TableCell
-                                                        key={
-                                                            cell.id
+                <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                        table.getRowModel().rows.map((row) => (
+                            <TableRow
+                                key={row.id}
+                                data-state={row.getIsSelected() && "selected"}
+                                className="transition hover:bg-zinc-50/70"
+                            >
+                                {row.getVisibleCells().map((cell) => {
+                                    const isEditing =
+                                        editingCell?.row === row.index &&
+                                        editingCell?.column === cell.column.id;
+
+                                    return (
+                                        <TableCell
+                                            key={cell.id}
+                                            className="px-5 py-3 align-top"
+                                        >
+                                            {isEditing ? (
+                                                <input
+                                                    autoFocus
+                                                    className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none ring-0 transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-950/10"
+                                                    value={String(cell.getValue() ?? "")}
+                                                    onChange={(e) =>
+                                                        updateCell(
+                                                            row.index,
+                                                            cell.column.id,
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    onBlur={() => setEditingCell(null)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            setEditingCell(null);
                                                         }
-                                                    >
-                                                        {isEditing ? (
-                                                            <input
-                                                                autoFocus
-                                                                className="w-full rounded border px-2 py-1"
-                                                                value={String(
-                                                                    cell.getValue() ??
-                                                                    ""
-                                                                )}
-                                                                onChange={(
-                                                                    e
-                                                                ) =>
-                                                                    updateCell(
-                                                                        row.index,
-                                                                        cell
-                                                                            .column
-                                                                            .id,
-                                                                        e
-                                                                            .target
-                                                                            .value
-                                                                    )
-                                                                }
-                                                                onBlur={() =>
-                                                                    setEditingCell(
-                                                                        null
-                                                                    )
-                                                                }
-                                                                onKeyDown={(
-                                                                    e
-                                                                ) => {
-                                                                    if (
-                                                                        e.key ===
-                                                                        "Enter"
-                                                                    ) {
-                                                                        setEditingCell(
-                                                                            null
-                                                                        )
-                                                                    }
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className="min-h-8 cursor-pointer rounded px-2 py-1 hover:bg-muted"
-                                                                onClick={() =>
-                                                                    setEditingCell(
-                                                                        {
-                                                                            row: row.index,
-                                                                            column:
-                                                                                cell
-                                                                                    .column
-                                                                                    .id,
-                                                                        }
-                                                                    )
-                                                                }
-                                                            >
-                                                                {String(
-                                                                    cell.getValue() ??
-                                                                    ""
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </TableCell>
-                                                )
-                                            })}
-
-                                        <TableCell>
-                                            <button
-                                                className="rounded-md border px-2 py-1 text-sm text-red-600 hover:bg-red-50"
-                                                onClick={() =>
-                                                    deleteRow(
-                                                        row.index
-                                                    )
-                                                }
-                                            >
-                                                Delete
-                                            </button>
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div
+                                                    className="min-h-10 cursor-pointer rounded-xl px-3 py-2 text-sm text-zinc-800 transition hover:bg-zinc-100"
+                                                    onClick={() =>
+                                                        setEditingCell({
+                                                            row: row.index,
+                                                            column: cell.column.id,
+                                                        })
+                                                    }
+                                                >
+                                                    {String(cell.getValue() ?? "") || (
+                                                        <span className="text-zinc-400">
+                                                            Empty
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </TableCell>
-                                    </TableRow>
-                                ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={
-                                        columns.length +
-                                        1
-                                    }
-                                    className="h-24 text-center"
-                                >
-                                    No results.
+                                    );
+                                })}
+
+                                <TableCell className="px-5 py-3 text-right align-top">
+                                    <button
+                                        className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                                        onClick={() => deleteRow(row.index)}
+                                    >
+                                        Delete
+                                    </button>
                                 </TableCell>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell
+                                colSpan={columns.length + 1}
+                                className="h-40 text-center"
+                            >
+                                <div className="flex flex-col items-center justify-center">
+                                    <p className="text-sm font-medium text-zinc-700">
+                                        No rows yet
+                                    </p>
+                                    <p className="mt-1 text-sm text-zinc-500">
+                                        Add your first row to start building this dataset.
+                                    </p>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
         </div>
-    )
+    </div>
+);
 }
