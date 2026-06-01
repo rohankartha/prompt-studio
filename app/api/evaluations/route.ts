@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
-import type { Judge } from "@/generated/prisma/client";
+import type { Judge } from "@prisma/client";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 
 type JudgeResult = {
