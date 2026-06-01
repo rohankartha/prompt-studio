@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/shdcn/card";
 import { Input } from "@/components/ui/shdcn/input";
 import { Label } from "@/components/ui/shdcn/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/shdcn/textarea";
 import {
     Select,
     SelectContent,
@@ -28,6 +28,7 @@ import {
     AlertTitle,
 } from "@/components/ui/shdcn/alert";
 import { CircleX } from "lucide-react";
+import { toast } from "sonner";
 
 
 
@@ -132,7 +133,12 @@ export function ExistingPromptEditor() {
             body: JSON.stringify(prompt)
         });
 
-        const result = await response.json()
+        const result = await response.json();
+
+        if (!response.ok) {
+            toast.error(result?.error ?? "Failed to run evaluation.");
+            return;
+        }
 
         if (!result.ok) {
             setError(result.error);
@@ -155,7 +161,7 @@ export function ExistingPromptEditor() {
             datasetId: selectedDatasetId
         }
 
-        const response = await fetch("/api/run-prompt", {
+        const response = await fetch("/api/run", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -164,6 +170,10 @@ export function ExistingPromptEditor() {
         });
 
         const data = await response.json();
+        if (!response.ok) {
+            toast.error(data?.error ?? "Failed to run evaluation.");
+            return;
+        }
         setOutput(data);
 
         setModel("");

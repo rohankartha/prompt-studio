@@ -34,26 +34,10 @@ export type RunTableRow = {
     id: string;
     promptName: string;
     datasetName: string;
-    latencyMs: number;
+    avgLatency: number;
     tokensIn: number;
     tokensOut: number;
 };
-
-// model Run {
-//     id String @id @default(cuid())
-
-//     promptId String
-//     prompt   Prompt @relation(fields: [promptId], references: [id])
-
-//     datasetId String
-//     dataset   Dataset @relation(fields: [datasetId], references: [id])
-
-//     evaluations Evaluation[]
-//     output      String[]
-//     latencyMs   Float
-//     tokensIn    Int
-//     tokensOut   Int
-// }
 
 
 export default function PromptRunResultsTable() {
@@ -67,14 +51,25 @@ export default function PromptRunResultsTable() {
     const [judgeModel, setJudgeModel] = useState("");
     const [judgeType, setJudgeType] = useState("");
 
+    // State variables of selected run
+    const [datasetId, setDatasetId] = useState("");
+
 
     // Function to update state variables when row is clicked
-    function handleRowClick(
-        run: RunTableRow,
-        promptId: string,
-        datasetId: string
+    async function handleRowClick(
+        run: RunTableRow
     ) {
 
+        const response = await fetch(`/api/run/${run.id}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        const result = await response.json();
+
+        setDatasetId(result.datasetId);
         setSelectedRun(run);
         setEvalDialogOpen(true);
     };
@@ -87,7 +82,7 @@ export default function PromptRunResultsTable() {
     useEffect(() => {
         async function retrieveRuns() {
 
-            const response = await fetch("/api/run-results", {
+            const response = await fetch("/api/run", {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json"
@@ -98,7 +93,6 @@ export default function PromptRunResultsTable() {
             setRunResults(result);
         }
         retrieveRuns();
-
     }, [])
 
 
@@ -116,12 +110,12 @@ export default function PromptRunResultsTable() {
 
         const payload = {
             runId: run.id,
-            datasetId: run.datasetId,
+            datasetId: datasetId,
             judgeModel: judgeModel,
             judgeType: judgeType
         }
 
-        const response = await fetch("/api/evaluations/run", {
+        const response = await fetch("/api/evaluations", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -135,6 +129,10 @@ export default function PromptRunResultsTable() {
             toast.error(result?.error ?? "Failed to run evaluation.");
             return;
         }
+
+        setDatasetId("");
+        setJudgeModel("");
+        setJudgeType("");
     }
 
 
@@ -321,7 +319,11 @@ export default function PromptRunResultsTable() {
                             <Button
                                 variant="outline"
                                 className="rounded-xl bg-white shadow-sm hover:bg-zinc-50"
-                                onClick={() => setEvalDialogOpen(false)}
+                                onClick={
+                                    () => {
+                                        setEvalDialogOpen(false)
+                                        setDatasetId("");
+                                    }}
                             >
                                 Cancel
                             </Button>

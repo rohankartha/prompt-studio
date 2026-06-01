@@ -1,16 +1,26 @@
 import { prisma } from "@/lib/prisma";
-import { Next } from "@hugeicons/core-free-icons";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ promptId: string }> }
 ) {
+
+    const { userId } = await auth();
+    if (!userId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    };
+
     const { promptId } = await params;
 
     const prompt = await prisma.prompt.findUnique({
         where: {
-            id: promptId
+            id: promptId,
+            userId: userId
         },
         select: {
             id: true,
@@ -19,9 +29,6 @@ export async function GET(
             version: true
         },
     });
-
-    console.log(prompt)
-
     return NextResponse.json(prompt);
 }
 

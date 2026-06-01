@@ -1,11 +1,8 @@
-// app/api/evaluations/run/route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
-import { OutputRow } from "@/lib/client-side-types";
-import { Prisma } from "@/generated/prisma/client";
-import type { Judge, PromptRunResult } from "@/generated/prisma/client";
+import type { Judge } from "@/generated/prisma/client";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
 type JudgeResult = {
     score: number;
@@ -13,15 +10,42 @@ type JudgeResult = {
     reasoning: string;
 };
 
+type DatasetRow = {
+    input: string,
+    expectedOutput: string
+};
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY!,
 });
 
+
+// Run a new evaluation
 export async function POST(req: Request) {
 
     // Extracting parameters
     const body = await req.json();
+    const { userId } = await auth();
+
+    // Return error if unauthorized user
+    if (!userId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    };
+
+    const client = await clerkClient();
+
+    const user = await client.users.getUser(userId);
+
+    if (user.publicMetadata.readOnly) {
+        return NextResponse.json(
+            {error: "Demo accounts cannot perform this action."},
+            {status: 403}
+        );
+    }
+
     const {
         runId,
         datasetId,
@@ -30,52 +54,33 @@ export async function POST(req: Request) {
     } = body;
 
     // Load run result, dataset, and judge
-    const promptRunResult = await prisma.promptRunResult.findUnique({
-        where: { id: runId },
+    const run = await prisma.run.findUnique({
+        where: { id: runId, userId: userId },
     });
-
     const dataset = await prisma.dataset.findUnique({
-        where: { id: datasetId },
+        where: { id: datasetId, userId: userId },
     });
-
     const judge = await prisma.judge.findFirst({
         where: { type: judgeType },
     });
 
-    if (!promptRunResult || !dataset || !judge) {
+    if (!run || !dataset || !judge) {
         return NextResponse.json(
             { error: "Missing prompt version, dataset, or judge" },
             { status: 404 }
         );
     }
 
-    console.log(promptRunResult)
-    console.log(dataset)
-    console.log(judge)
+    const datasetRows = dataset.rows as DatasetRow[];
 
-
-    const evaluationSummary = await prisma.evaluationSummary.create({
-        data: {
-            status: "Started",
-            runId: runId,
-            datasetId: datasetId,
-            judgeId: judge.id,
-            model: judgeModel
-        }
-    })
-
-    const datasetRows = dataset.rows as OutputRow[];
-
-
-
-    const rows = promptRunResult.actualOutputs.map((actualOutput, i) => ({
-        input: datasetRows[i]["expectedOutput"],
-        expectedOutput: promptRunResult.expectedOutputs[i],
-        actualOutput,
+    const rows = run.output.map((output, i) => ({
+        input: datasetRows[i]["input"],
+        expectedOutput: datasetRows[i]["expectedOutput"],
+        output,
     }));
 
-
     let passedCount = 0;
+    let failedCount = 0;
 
 
     const inputs: string[] = [];
@@ -91,44 +96,34 @@ export async function POST(req: Request) {
             judge,
             row.input ?? "",
             row.expectedOutput ?? "",
-            row.actualOutput ?? "",
+            row.output ?? "",
         );
 
         if (judgeResult.passed) {
             passedCount++;
         }
-
-        console.log()
+        else {
+            failedCount++;
+        }
 
         inputs.push(row.input ?? "");
         expectedOutputs.push(row.expectedOutput ?? "");
-        actualOutputs.push(row.actualOutput ?? "");
+        actualOutputs.push(row.output ?? "");
         judgeScores.push(judgeResult.score);
         passedArray.push(judgeResult.passed);
         judgeReasonings.push(judgeResult.reasoning);
     }
 
-    const overallScore = rows.length === 0 ? 0 : passedCount / rows.length;
-
-    await prisma.evaluationResult.create({
+    await prisma.evaluation.create({
         data: {
+            userId: userId,
             runId: runId,
-            datasetId: datasetId,
-            input: inputs,
-            expectedOutput: expectedOutputs,
-            actualOutput: actualOutputs,
+            judgeId: judge.id,
             judgeScore: judgeScores,
             passed: passedArray,
+            passedCount: passedCount,
+            failedCount: failedCount,
             judgeReasoning: judgeReasonings,
-        },
-    });
-
-    await prisma.evaluationSummary.update({
-        where: {
-            id: evaluationSummary.id
-        },
-        data: {
-            status: "COMPLETED",
         },
     });
 
@@ -230,3 +225,40 @@ async function runJudge(
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export async function GET() {
+
+    const { userId } = await auth();
+
+    // Return error if unauthorized user
+    if (!userId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    };
+
+    const evaluations = await prisma.evaluation.findMany({
+        select: {
+            id: true
+        },
+        where: {
+            userId: userId
+        }
+    });
+    return NextResponse.json(evaluations);
+}

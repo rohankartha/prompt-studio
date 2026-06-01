@@ -6,7 +6,7 @@ import {
     Card,
     CardContent,
 } from "@/components/ui/shdcn/card";
-import { Button } from "./shdcn/button";
+import { Button } from "@/components/ui/shdcn/button";
 import { FolderOpen, Plus } from "lucide-react";
 import {
     Dialog,
@@ -19,6 +19,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { EditableTable } from "./EditableTable";
 import { Input } from "./shdcn/input";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 
 type DatasetRow = {
@@ -103,6 +104,11 @@ export function DatasetEditor() {
 
         const body = await response.json();
         const dataset = body.dataset;
+
+        if (!response.ok) {
+            toast.error(body?.error ?? "Demo accounts cannot perform this action.");
+            return;
+        }
 
         setDatasetMetadata((old) => [
             ...old,

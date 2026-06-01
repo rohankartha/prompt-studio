@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { encryptApiKey } from "@/lib/crypto";
 
 export async function POST(req: Request) {
+
     const { userId } = await auth();
 
+    // Return error if unauthorized user
     if (!userId) {
         return NextResponse.json(
             { error: "Unauthorized" },
             { status: 401 }
+        );
+    };
+
+    const client = await clerkClient();
+
+    const user = await client.users.getUser(userId);
+
+    if (user.publicMetadata.readOnly) {
+        return NextResponse.json(
+            {error: "Demo accounts cannot perform this action."},
+            {status: 403}
         );
     }
 

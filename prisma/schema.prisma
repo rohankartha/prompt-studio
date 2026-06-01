@@ -47,7 +47,8 @@ model UserApiKey {
 }
 
 model Run {
-    id String @id @default(cuid())
+    id     String @id @default(cuid())
+    userId String
 
     promptId String
     prompt   Prompt @relation(fields: [promptId], references: [id])
@@ -57,7 +58,7 @@ model Run {
 
     evaluations Evaluation[]
     output      String[]
-    latencyMs   Float
+    latencies   Float[]
     tokensIn    Int
     tokensOut   Int
 }
@@ -65,7 +66,8 @@ model Run {
 // Status | Prompt | Version | Dataset | Judge | Score | Failures | Cost | Created
 
 model Evaluation {
-    id String @id @default(cuid())
+    id     String @id @default(cuid())
+    userId String
 
     runId String
     run   Run    @relation(fields: [runId], references: [id])
@@ -75,7 +77,9 @@ model Evaluation {
 
     judgeScore     Float[]
     passed         Boolean[]
-    judgeReasoning Json[]
+    passedCount    Int
+    failedCount    Int
+    judgeReasoning String[]
 }
 
 enum JudgeType {
@@ -89,6 +93,7 @@ enum JudgeType {
 
 model Judge {
     id          String       @id @default(cuid())
+    userId      String
     name        String
     type        JudgeType
     rubric      String?

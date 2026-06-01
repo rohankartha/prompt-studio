@@ -7,305 +7,339 @@ import {
     CardTitle,
 } from "@/components/ui/shdcn/card";
 
-import { Button } from "@/components/ui/shdcn/button";
-
 import { Badge } from "@/components/ui/shdcn/badge";
 
 import {
     CheckCircle,
     XCircle,
     Clock,
-    BarChart3,
 } from "lucide-react";
 
-import type { EvaluationResult } from "@/generated/prisma/client";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/shdcn/select";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type SummaryStatistics = {
+    overallScore: number;
+    passed: number;
+    failed: number;
+    avgLatency: number;
+};
+
+type Evaluation = {
+    id: string;
+    inputs: string[];
+    expectedOutputs: string[];
+    outputs: string[];
+    judgeScores: number[];
+    judgeReasoning: string[];
+    latencies: number[];
+};
+
+type EvaluationListItem = {
+    id: string;
+};
 
 export function EvaluationDisplay() {
+    const [loading, setLoading] = useState(false);
+    const [summaryStatistics, setSummaryStatistics] =
+        useState<SummaryStatistics | null>(null);
 
+    const [evaluationList, setEvaluationList] = useState<EvaluationListItem[]>([]);
+    const [selectedCase, setSelectedCase] = useState(0);
 
+    const [evaluation, setEvaluation] = useState<Evaluation>({
+        id: "",
+        inputs: [],
+        expectedOutputs: [],
+        outputs: [],
+        judgeScores: [],
+        judgeReasoning: [],
+        latencies: [],
+    });
 
+    useEffect(() => {
+        async function retrieveEvaluationList() {
+            const response = await fetch("/api/evaluations", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
 
-    const [evaluation, setEvaluation] = useState<EvaluationResult>();
-
-
-    async function retrieveEvaluationIds() {
-
-        
-    }
-
-    async function retrieveEvaluation(evaluationId: string) {
-        const payload = {
-            evaluationId: evaluationId
+            const result = await response.json();
+            setEvaluationList(result);
         }
 
-        const response = await fetch("/api/prompts", {
+        retrieveEvaluationList();
+    }, []);
+
+    async function retrieveEvaluationAndSummaryStatistics(evaluationId: string) {
+        setLoading(true);
+
+        const response = await fetch(`/api/evaluations/${evaluationId}`, {
             method: "GET",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             },
-            body: JSON.stringify(payload)
         });
+
         const result = await response.json();
-        setEvaluation(result);
+
+        setSummaryStatistics(result.summaryStatistics);
+        setEvaluation(result.table);
+
+        setLoading(false);
     }
 
-
-
-
-
-
-
     return (
-        <main className="min-h-screen bg-muted/30 p-8">
-            <div className="mx-auto max-w-7xl space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-4xl font-bold">
-                            Evaluation Run #45
-                        </h1>
+        <main className="min-h-screen bg-zinc-50 py-4">
+            <div className="mx-auto max-w-7xl space-y-8">
+                <div className="flex items-center gap-3">
+                    <Select
+                        value={evaluation.id}
+                        onValueChange={(id) => {
+                            retrieveEvaluationAndSummaryStatistics(id);
+                        }}
+                    >
+                        <SelectTrigger className="h-11 w-[300px] rounded-xl border-zinc-200 bg-white shadow-sm">
+                            <SelectValue placeholder="Select evaluation" />
+                        </SelectTrigger>
 
-                        <p className="mt-2 text-muted-foreground">
-                            Dataset: Billing Support Eval • GPT-4o Mini
-                        </p>
-                    </div>
-
-                    <Button>
-                        Run New Evaluation
-                    </Button>
+                        <SelectContent>
+                            {evaluationList.map((evaluation) => (
+                                <SelectItem
+                                    key={evaluation.id}
+                                    value={evaluation.id}
+                                >
+                                    {evaluation.id}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
-                {/* Metrics */}
                 <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">
-                                Overall Score
-                            </CardTitle>
-                        </CardHeader>
+                    {loading ? (
+                        <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm md:col-span-4">
+                            <CardContent className="p-8 text-center text-sm text-zinc-500">
+                                Loading evaluation...
+                            </CardContent>
+                        </Card>
+                    ) : summaryStatistics == null ? (
+                        <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm md:col-span-4">
+                            <CardContent className="p-8 text-center text-sm text-zinc-500">
+                                Choose an evaluation to explore results and performance metrics.
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <>
+                            <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium text-zinc-500">
+                                        Overall Score
+                                    </CardTitle>
+                                </CardHeader>
 
-                        <CardContent>
-                            <div className="text-3xl font-bold">
-                                82%
-                            </div>
+                                <CardContent>
+                                    <div className="text-4xl font-semibold tracking-tight text-zinc-950">
+                                        {summaryStatistics.overallScore}%
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Good Performance
-                            </p>
-                        </CardContent>
-                    </Card>
+                            <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium text-zinc-500">
+                                        Passed
+                                    </CardTitle>
+                                </CardHeader>
 
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">
-                                Passed
-                            </CardTitle>
-                        </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center gap-3">
+                                        <div className="rounded-full bg-emerald-50 p-2">
+                                            <CheckCircle className="h-5 w-5 text-emerald-600" />
+                                        </div>
 
-                        <CardContent>
-                            <div className="flex items-center gap-2">
-                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                        <span className="text-4xl font-semibold tracking-tight text-zinc-950">
+                                            {summaryStatistics.passed}
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                <span className="text-3xl font-bold">
-                                    41
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium text-zinc-500">
+                                        Failed
+                                    </CardTitle>
+                                </CardHeader>
 
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">
-                                Failed
-                            </CardTitle>
-                        </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center gap-3">
+                                        <div className="rounded-full bg-red-50 p-2">
+                                            <XCircle className="h-5 w-5 text-red-600" />
+                                        </div>
 
-                        <CardContent>
-                            <div className="flex items-center gap-2">
-                                <XCircle className="h-5 w-5 text-red-500" />
+                                        <span className="text-4xl font-semibold tracking-tight text-zinc-950">
+                                            {summaryStatistics.failed}
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                <span className="text-3xl font-bold">
-                                    9
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium text-zinc-500">
+                                        Avg Latency
+                                    </CardTitle>
+                                </CardHeader>
 
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">
-                                Avg Latency
-                            </CardTitle>
-                        </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-center gap-3">
+                                        <div className="rounded-full bg-orange-50 p-2">
+                                            <Clock className="h-5 w-5 text-orange-600" />
+                                        </div>
 
-                        <CardContent>
-                            <div className="flex items-center gap-2">
-                                <Clock className="h-5 w-5 text-orange-500" />
-
-                                <span className="text-3xl font-bold">
-                                    1.42s
-                                </span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                        <span className="text-4xl font-semibold tracking-tight text-zinc-950">
+                                            {summaryStatistics.avgLatency}
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </>
+                    )}
                 </div>
 
-                {/* Results Table */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>
-                            Test Case Results
-                        </CardTitle>
-                    </CardHeader>
 
-                    <CardContent>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b text-left">
-                                        <th className="pb-3">
-                                            Input
-                                        </th>
 
-                                        <th className="pb-3">
-                                            Expected Output
-                                        </th>
 
-                                        <th className="pb-3">
-                                            Score
-                                        </th>
 
-                                        <th className="pb-3">
-                                            Status
-                                        </th>
+                {evaluation.inputs.length > 0 && (
+                    <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+                        {/* Left Panel */}
+                        <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
+                            <CardHeader>
+                                <CardTitle>Test Cases</CardTitle>
+                            </CardHeader>
 
-                                        <th className="pb-3">
-                                            Latency
-                                        </th>
-                                    </tr>
-                                </thead>
+                            <CardContent className="space-y-2">
+                                {evaluation.inputs.map((input, index) => {
+                                    const score = evaluation.judgeScores[index] ?? 0;
+                                    const passed = score >= 0.7;
 
-                                <tbody>
-                                    <tr className="border-b">
-                                        <td className="py-4">
-                                            I was charged twice this
-                                            month.
-                                        </td>
+                                    return (
+                                        <button
+                                            key={index}
+                                            onClick={() => setSelectedCase(index)}
+                                            className={`w-full rounded-xl border p-4 text-left transition-all
+                            ${selectedCase === index
+                                                    ? "border-zinc-900 bg-zinc-100"
+                                                    : "border-zinc-200 bg-white hover:bg-zinc-50"
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-medium text-zinc-900">
+                                                    Test Case {index + 1}
+                                                </span>
 
-                                        <td>
-                                            Apologize and offer
-                                            investigation.
-                                        </td>
+                                                <Badge
+                                                    className={
+                                                        passed
+                                                            ? "bg-emerald-100 text-emerald-700"
+                                                            : "bg-red-100 text-red-700"
+                                                    }
+                                                >
+                                                    {passed ? "Passed" : "Failed"}
+                                                </Badge>
+                                            </div>
 
-                                        <td>1.0</td>
+                                            <div className="mt-2 truncate text-sm text-zinc-500">
+                                                {input}
+                                            </div>
 
-                                        <td>
-                                            <Badge>
-                                                Passed
-                                            </Badge>
-                                        </td>
+                                            <div className="mt-3 flex items-center gap-2">
+                                                <Badge variant="outline">
+                                                    {(score * 100).toFixed(0)}%
+                                                </Badge>
 
-                                        <td>1.21s</td>
-                                    </tr>
+                                                <span className="text-xs text-zinc-500">
+                                                    {(
+                                                        (evaluation.latencies[index] ?? 0) /
+                                                        1000
+                                                    ).toFixed(2)}
+                                                    s
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </CardContent>
+                        </Card>
 
-                                    <tr className="border-b">
-                                        <td className="py-4">
-                                            I need a refund for my
-                                            order.
-                                        </td>
+                        {/* Right Panel */}
+                        <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
+                            <CardHeader>
+                                <CardTitle>
+                                    Test Case {selectedCase + 1}
+                                </CardTitle>
+                            </CardHeader>
 
-                                        <td>
-                                            Explain refund process.
-                                        </td>
+                            <CardContent className="space-y-6">
+                                <div>
+                                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                        Input
+                                    </div>
 
-                                        <td>0.0</td>
+                                    <div className="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-800">
+                                        {evaluation.inputs[selectedCase]}
+                                    </div>
+                                </div>
 
-                                        <td>
-                                            <Badge
-                                                variant="destructive"
-                                            >
-                                                Failed
-                                            </Badge>
-                                        </td>
+                                <div>
+                                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                        Expected Output
+                                    </div>
 
-                                        <td>1.56s</td>
-                                    </tr>
+                                    <div className="whitespace-pre-wrap rounded-xl bg-zinc-50 p-4 text-sm text-zinc-800">
+                                        {evaluation.expectedOutputs[selectedCase]}
+                                    </div>
+                                </div>
 
-                                    <tr className="border-b">
-                                        <td className="py-4">
-                                            My payment method was
-                                            declined.
-                                        </td>
+                                <div>
+                                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                        Actual Output
+                                    </div>
 
-                                        <td>
-                                            Troubleshoot payment
-                                            issue.
-                                        </td>
+                                    <div className="whitespace-pre-wrap rounded-xl bg-zinc-50 p-4 text-sm text-zinc-800">
+                                        {evaluation.outputs[selectedCase]}
+                                    </div>
+                                </div>
 
-                                        <td>0.5</td>
+                                <div>
+                                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                                        Judge Reasoning
+                                    </div>
 
-                                        <td>
-                                            <Badge
-                                                variant="secondary"
-                                            >
-                                                Partial
-                                            </Badge>
-                                        </td>
+                                    <div className="whitespace-pre-wrap rounded-xl bg-zinc-50 p-4 text-sm leading-6 text-zinc-700">
+                                        {evaluation.judgeReasoning[selectedCase]}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
-                                        <td>1.08s</td>
-                                    </tr>
 
-                                    <tr>
-                                        <td className="py-4">
-                                            Can I change my plan?
-                                        </td>
 
-                                        <td>
-                                            Explain plan change
-                                            process.
-                                        </td>
 
-                                        <td>1.0</td>
 
-                                        <td>
-                                            <Badge>
-                                                Passed
-                                            </Badge>
-                                        </td>
-
-                                        <td>1.11s</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Summary */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>
-                            Evaluation Summary
-                        </CardTitle>
-                    </CardHeader>
-
-                    <CardContent>
-                        <div className="flex items-start gap-3">
-                            <BarChart3 className="mt-1 h-5 w-5 text-primary" />
-
-                            <p className="text-muted-foreground">
-                                Prompt version 3 performs
-                                well on billing inquiries but
-                                struggles with refund-related
-                                requests. Consider adding more
-                                refund-specific instructions
-                                to improve coverage.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
         </main>
     );

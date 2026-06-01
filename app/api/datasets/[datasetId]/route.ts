@@ -1,25 +1,33 @@
 import { prisma } from "@/lib/prisma";
-import { Next } from "@hugeicons/core-free-icons";
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
-export async function GET(
+
+// Retrieve a single dataset
+export async function GET (
     request: Request,
     { params }: { params: Promise<{ datasetId: string }> }
-) {
-    const { datasetId } = await params;
+){
+    // Return error if unauthorized user
+    const { userId } = await auth();
+    if (!userId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    };
 
+    const { datasetId } = await params;
     const dataset = await prisma.dataset.findUnique({
-        where: {
-            id: datasetId,
-        },
         select: {
             id: true,
             name: true,
             rows: true,
         },
+        where: {
+            userId: userId,
+            id: datasetId
+        }
     });
-
-    // console.log(datasetId); // "123"
-
     return NextResponse.json(dataset);
 }

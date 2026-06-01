@@ -20,6 +20,7 @@ import {
 
 import { Button } from "./shdcn/button"
 import { Save } from "lucide-react";
+import { toast } from "sonner"
 
 type EditableTableProps<
     TData extends Record<string, string>,
@@ -97,13 +98,19 @@ export function EditableTable<
             tableData
         }
 
-        await fetch("/api/datasets", {
+        const response = await fetch("/api/datasets", {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(payload)
         });
+
+        const result = await response.json();
+        if (!response.ok) {
+            toast.error(result?.error ?? "Demo accounts cannot perform this action.");
+            return;
+        }
     };
 
     const table = useReactTable({

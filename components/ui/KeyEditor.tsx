@@ -27,6 +27,8 @@ import {
     SelectValue,
 } from "@/components/ui/shdcn/select";
 
+import { toast } from "sonner";
+
 
 type Key = {
     id: string,
@@ -77,6 +79,11 @@ export function ApiKeyEditor() {
             }),
         });
         const body = await response.json();
+
+        if (!response.ok) {
+            toast.error(body?.error ?? "Failed to run evaluation.");
+            return;
+        }
 
         setApiKeyNames((old) => [
             ...old,

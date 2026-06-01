@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 
+// Create a new prompt
 export async function POST(req: Request) {
 
     const body = await req.json();
@@ -15,8 +16,20 @@ export async function POST(req: Request) {
         );
     };
 
+    const client = await clerkClient();
+
+    const user = await client.users.getUser(userId);
+
+    if (user.publicMetadata.readOnly) {
+        return NextResponse.json(
+            {error: "Demo accounts cannot perform this action."},
+            {status: 403}
+        );
+    }
+
     const checkExistingPrompt = await prisma.prompt.findFirst({
         where: {
+            userId: userId,
             name: body["name"],
         },
     });
@@ -41,20 +54,26 @@ export async function POST(req: Request) {
 }
 
 
-
-
-
-
-
-
-
+// Retrieve list of prompts
 export async function GET() {
+
+    const { userId } = await auth();
+
+    if (!userId) {
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 401 }
+        );
+    };
 
     const prompts = await prisma.prompt.findMany({
         select: {
             id: true,
             name: true,
             version: true
+        },
+        where: {
+            userId: userId
         }
     });
 
