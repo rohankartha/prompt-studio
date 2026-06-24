@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
@@ -74,10 +74,11 @@ model Evaluation {
     judgeId String
     judge   Judge  @relation(fields: [judgeId], references: [id])
 
+    status         String    @default("NOT STARTED")
     judgeScore     Float[]
     passed         Boolean[]
-    passedCount    Int
-    failedCount    Int
+    passedCount    Int       @default(0)
+    failedCount    Int       @default(0)
     judgeReasoning String[]
 }
 

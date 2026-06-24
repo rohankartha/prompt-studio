@@ -1,10 +1,11 @@
 // prisma/seed.ts
 
 import { PrismaClient, JudgeType } from "@/generated/prisma/client";
+import "dotenv/config";
 
 const prisma = new PrismaClient();
 
-const USER_ID = "user_3EXqPvV855LB02aiHuOCdwGayjj";
+const USER_ID = "user_3E9Hc7N8KBbo3icCQauMkduRPWj";
 
 async function main() {
 

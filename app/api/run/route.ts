@@ -151,7 +151,7 @@ export async function POST(req: Request) {
         },
     });
 
-    return NextResponse.json(actualOutputs);
+    return NextResponse.json(results);
 }
 
 

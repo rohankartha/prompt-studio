@@ -24,100 +24,160 @@ import {
     BarChart3,
     Activity,
     Key,
+    Plus,
+    History,
+    Play
 } from "lucide-react";
 
-const items = [
+import { usePathname } from "next/navigation";
+
+import Image from "next/image";
+
+const sections = [
     {
         title: "Prompts",
-        href: "/dashboard/prompts",
-        icon: FileText,
+        items: [
+            {
+                title: "Create New Prompt",
+                href: "/dashboard/prompts/new",
+                icon: Plus,
+            },
+            {
+                title: "Update Existing Prompt",
+                href: "/dashboard/prompts/existing",
+                icon: History,
+            },
+            {
+                title: "Run Prompt",
+                href: "/dashboard/prompts/run",
+                icon: Play
+            }
+        ],
     },
     {
         title: "Datasets",
-        href: "/dashboard/datasets",
-        icon: Database,
-    },
-    {
-        title: "Runs",
-        href: "/dashboard/runs",
-        icon: Activity,
+        items: [
+            {
+                title: "Create New Dataset",
+                href: "/dashboard/datasets/new",
+                icon: Activity,
+            },
+            {
+                title: "View All Datasets",
+                href: "/dashboard/datasets",
+                icon: BarChart3,
+            },
+        ],
     },
     {
         title: "Evaluations",
-        href: "/dashboard/evaluations",
-        icon: BarChart3,
+        items: [
+            {
+                title: "View Status Table",
+                href: "/dashboard/runs",
+                icon: Activity,
+            },
+            {
+                title: "Run New Evaluation",
+                href: "/dashboard/datasets",
+                icon: BarChart3,
+            },
+        ],
     },
     {
-        title: "Keys",
-        href: "/dashboard/keys",
-        icon: Key,
+        title: "Settings",
+        items: [
+            {
+                title: "Keys",
+                href: "/dashboard/keys",
+                icon: Key,
+            },
+        ],
     },
 ];
 
+
 export function AppSidebar() {
+    const pathname = usePathname();
+
     return (
         <Sidebar className="border-r border-zinc-200 bg-white">
             <SidebarContent className="flex h-full flex-col bg-white">
-                <div className="border-b border-zinc-200 px-6 py-6">
+                <div className="flex items-center gap-3 py-6 px-6">
+                    <Image
+                        src="/quill.png"
+                        alt="Quill Logo"
+                        width={36}
+                        height={36}
+                    />
+
                     <h1 className="text-2xl font-bold tracking-tight text-zinc-950">
-                        Prompt Studio
+                        Quill
                     </h1>
-
-                    <p className="mt-1 text-sm text-zinc-500">
-                        Evaluate prompts and datasets
-                    </p>
                 </div>
 
-                <SidebarGroup className="flex-1 px-3 py-4">
-                    <SidebarMenu className="space-y-1">
-                        {items.map((item) => (
-                            <SidebarMenuItem key={item.href}>
-                                <SidebarMenuButton
-                                    asChild
-                                    className="h-11 rounded-xl text-zinc-700 transition-all hover:bg-zinc-900 hover:text-white data-[active=true]:bg-zinc-900 data-[active=true]:text-white"
-                                >
-                                    <Link
-                                        href={item.href}
-                                        className="flex items-center gap-3 px-3"
+                {sections.map((section) => (
+                    <SidebarGroup
+                        key={section.title}
+                        className="px-3 py-4"
+                    >
+                        <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                            {section.title}
+                        </div>
+
+                        <SidebarMenu>
+                            {section.items.map((item) => (
+                                <SidebarMenuItem key={item.href}>
+                                    <SidebarMenuButton
+                                        asChild
+                                        isActive={pathname === item.href}
                                     >
-                                        <item.icon className="h-5 w-5 shrink-0" />
-                                        <span className="text-sm font-medium">
-                                            {item.title}
-                                        </span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                </SidebarGroup>
-
-                <div className="border-t border-zinc-200 p-4">
-                    <Show when="signed-out">
-                        <div className="space-y-2">
-                            <SignInButton>
-                                <button className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
-                                    Sign In
-                                </button>
-                            </SignInButton>
-
-                            <SignUpButton>
-                                <button className="w-full rounded-xl bg-zinc-950 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800">
-                                    Sign Up
-                                </button>
-                            </SignUpButton>
-                        </div>
-                    </Show>
-
-                    <Show when="signed-in">
-                        <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
-                            <span className="text-sm font-medium text-zinc-700">
-                                Account
-                            </span>
-                            <UserButton />
-                        </div>
-                    </Show>
-                </div>
+                                        <Link href={item.href}>
+                                            <item.icon className="h-4 w-4" />
+                                            <span>{item.title}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroup>
+                ))}
             </SidebarContent>
         </Sidebar>
-    );
-}
+    )
+};
+
+// {/*                 
+                
+
+
+//                         <div className="border-t border-zinc-200 p-4">
+//                             <Show when="signed-out">
+//                                 <div className="space-y-2">
+//                                     <SignInButton>
+//                                         <button className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
+//                                             Sign In
+//                                         </button>
+//                                     </SignInButton>
+
+//                                     <SignUpButton>
+//                                         <button className="w-full rounded-xl bg-zinc-950 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800">
+//                                             Sign Up
+//                                         </button>
+//                                     </SignUpButton>
+//                                 </div>
+//                             </Show>
+
+//                             <Show when="signed-in">
+//                                 <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+//                                     <span className="text-sm font-medium text-zinc-700">
+//                                         Account
+//                                     </span>
+//                                     <UserButton />
+//                                 </div>
+//                             </Show>
+//                         </div>
+//                     </SidebarContent>
+//     </Sidebar>
+//             );
+// }}} */}

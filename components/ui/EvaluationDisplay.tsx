@@ -1,20 +1,30 @@
 "use client";
 
+
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
 } from "@/components/ui/shdcn/card";
-
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription
+} from "@/components/ui/shdcn/dialog";
+import { Loader2 } from "lucide-react";
+import { Lightbulb, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/shdcn/button";
 import { Badge } from "@/components/ui/shdcn/badge";
-
+import { ScrollArea } from "@/components/ui/shdcn/scroll-area";
 import {
     CheckCircle,
     XCircle,
     Clock,
 } from "lucide-react";
-
 import {
     Select,
     SelectContent,
@@ -22,8 +32,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/shdcn/select";
-
 import { useEffect, useState } from "react";
+import { Checkbox } from "@/components/ui/shdcn/checkbox";
+
 
 type SummaryStatistics = {
     overallScore: number;
@@ -31,6 +42,7 @@ type SummaryStatistics = {
     failed: number;
     avgLatency: number;
 };
+
 
 type Evaluation = {
     id: string;
@@ -42,9 +54,11 @@ type Evaluation = {
     latencies: number[];
 };
 
+
 type EvaluationListItem = {
     id: string;
 };
+
 
 export function EvaluationDisplay() {
     const [loading, setLoading] = useState(false);
@@ -53,6 +67,8 @@ export function EvaluationDisplay() {
 
     const [evaluationList, setEvaluationList] = useState<EvaluationListItem[]>([]);
     const [selectedCase, setSelectedCase] = useState(0);
+
+    const [submittedForAnalysis, setSubmittedForAnalysis] = useState(false);
 
     const [evaluation, setEvaluation] = useState<Evaluation>({
         id: "",
@@ -63,6 +79,18 @@ export function EvaluationDisplay() {
         judgeReasoning: [],
         latencies: [],
     });
+
+    const [improvePromptDialogOpen, setImprovePromptDialogOpen] = useState(false);
+
+    const [promptImprovements, setPromptImprovements] = useState<string>("");
+    const [loadingPromptImprovements, setLoadingPromptImprovements] = useState(false);
+
+    const [failureAnalysis, setFailureAnalysis] = useState("");
+    const [improvedPrompt, setImprovedPrompt] = useState("");
+    const [recommendation, setRecommendation] = useState("");
+    const [selectedAnalyses, setSelectedAnalyses] = useState<string[]>([]);
+
+    const [chooseOptions, setChooseOptions] = useState(true);
 
     useEffect(() => {
         async function retrieveEvaluationList() {
@@ -98,6 +126,41 @@ export function EvaluationDisplay() {
         setLoading(false);
     }
 
+    async function handleImprovePrompt(evaluationId: string) {
+        setLoadingPromptImprovements(true);
+        const response = await fetch(`/api/improve-prompt/${evaluationId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        });
+
+        const result = await response.json();
+        setRecommendation(result.recommendation);
+        setImprovedPrompt(result.improvedPrompt)
+        setLoadingPromptImprovements(false);
+    }
+
+
+    // Add/remove selected analysis to/from state if box is checked/unchecked
+    const toggleAnalysis = (value: string) => {
+        setSelectedAnalyses((prev) =>
+            prev.includes(value)
+                ? prev.filter((item) => item !== value)
+                : [...prev, value]
+        );
+    };
+
+    const resetImprovePromptDialog = () => {
+        setChooseOptions(true);
+        setSelectedAnalyses([]);
+        setRecommendation("");
+        setImprovedPrompt("");
+        setLoadingPromptImprovements(false);
+        setSubmittedForAnalysis(false);
+    };
+
+
     return (
         <main className="min-h-screen bg-zinc-50 py-4">
             <div className="mx-auto max-w-7xl space-y-8">
@@ -123,6 +186,10 @@ export function EvaluationDisplay() {
                             ))}
                         </SelectContent>
                     </Select>
+
+                    <Button onClick={() => { setImprovePromptDialogOpen(true) }}>
+                        Analyze & Improve Prompt
+                    </Button>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-4">
@@ -223,6 +290,7 @@ export function EvaluationDisplay() {
 
                 {evaluation.inputs.length > 0 && (
                     <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+
                         {/* Left Panel */}
                         <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
                             <CardHeader>
@@ -239,7 +307,7 @@ export function EvaluationDisplay() {
                                             key={index}
                                             onClick={() => setSelectedCase(index)}
                                             className={`w-full rounded-xl border p-4 text-left transition-all
-                            ${selectedCase === index
+                                                        ${selectedCase === index
                                                     ? "border-zinc-900 bg-zinc-100"
                                                     : "border-zinc-200 bg-white hover:bg-zinc-50"
                                                 }`}
@@ -338,8 +406,150 @@ export function EvaluationDisplay() {
 
 
 
+                <div>
+
+                    <Dialog
+                        open={improvePromptDialogOpen}
+                        onOpenChange={(open) => {
+                            setImprovePromptDialogOpen(open);
+
+                            if (!open) {
+                                resetImprovePromptDialog();
+                            }
+                        }}
+                    >
+                        <DialogContent className="max-h-[90vh] overflow-hidden rounded-2xl border-zinc-200 p-0 shadow-xl sm:max-w-4xl">
+
+                            {/* Header */}
+                            <div className="border-b border-zinc-200 px-6 py-5">
+                                <DialogHeader>
+                                    <DialogTitle className="text-xl font-semibold tracking-tight text-zinc-950">
+                                        Prompt Analysis
+                                    </DialogTitle>
+                                    <DialogDescription className="text-sm text-zinc-500">
+                                        Choose what you want the agent to analyze and improve.
+                                    </DialogDescription>
+                                </DialogHeader>
+                            </div>
 
 
+                            <div className="max-h-[70vh] overflow-y-auto px-6">
+
+                                {/* Check boxes for analysis options */}
+                                {chooseOptions ? (
+                                    <div className="grid gap-y-5 gap-x-2 pt-1 pb-2 sm:grid-cols-2 lg:grid-cols-3">
+                                        {[
+                                            "Clarity",
+                                            "Structure",
+                                            "Edge Cases",
+                                            "Output Format",
+                                            "Hallucination Risk",
+                                            "Evaluation Criteria",
+                                        ].map((option) => (
+                                            <label
+                                                key={option}
+                                                className="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 text-sm font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50"
+                                            >
+                                                <Checkbox
+                                                    checked={selectedAnalyses.includes(option)}
+                                                    onCheckedChange={() => toggleAnalysis(option)}
+                                                />
+                                                {option}
+                                            </label>
+                                        ))}
+
+                                        <Button 
+                                            className="col-span-full mt-2 h-11 rounded-xl bg-zinc-950 font-medium text-white shadow-sm transition hover:bg-zinc-800"
+                                            onClick={() => {
+                                                setChooseOptions(false);
+                                                setLoadingPromptImprovements(true);
+                                                handleImprovePrompt(evaluation.id);
+                                            }}
+                                        >
+                                            Submit
+                                        </Button>
+                                    </div>
+                                ) : loadingPromptImprovements ? (
+
+                                    // Loading page while AI generates analysis
+                                    <div className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-6 shadow-sm">
+                                        <div className="flex items-start gap-4">
+                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm">
+                                                <Loader2 className="h-5 w-5 animate-spin text-zinc-700" />
+                                            </div>
+
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div>
+                                                        <h3 className="text-sm font-semibold text-zinc-950">
+                                                            Generating prompt improvements
+                                                        </h3>
+                                                        <p className="mt-1 text-sm leading-6 text-zinc-500">
+                                                            Reviewing your selected criteria and generating a stronger prompt.
+                                                        </p>
+                                                    </div>
+
+                                                    <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-500 shadow-sm">
+                                                        AI running
+                                                    </span>
+                                                </div>
+
+                                                <div className="mt-5 space-y-2">
+                                                    <div className="h-2 w-full animate-pulse rounded-full bg-zinc-100" />
+                                                    <div className="h-2 w-5/6 animate-pulse rounded-full bg-zinc-100" />
+                                                    <div className="h-2 w-2/3 animate-pulse rounded-full bg-zinc-100" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+
+                                    // 
+                                    <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
+                                        <Card className="rounded-2xl border-amber-200 bg-amber-50/40">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2 text-base">
+                                                    <Lightbulb className="h-4 w-4 text-amber-600" />
+                                                    Recommendation
+                                                </CardTitle>
+                                            </CardHeader>
+
+                                            <CardContent>
+                                                <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
+                                                    {recommendation || "Select analysis options and run the agent to generate recommendations."}
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="rounded-2xl border-zinc-200 shadow-sm">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2 text-base">
+                                                    <Sparkles className="h-4 w-4 text-violet-600" />
+                                                    Improved Prompt
+                                                </CardTitle>
+                                            </CardHeader>
+
+                                            <CardContent>
+                                                <ScrollArea className="h-[500px] rounded-xl border border-zinc-200 bg-zinc-50">
+                                                    <div className="p-5">
+                                                        <pre className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
+                                                            {improvedPrompt || "Your improved prompt will appear here."}
+                                                        </pre>
+                                                    </div>
+                                                </ScrollArea>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                )}
+                            </div>
+
+
+                            <DialogFooter className="border-t border-zinc-200 bg-zinc-50 px-6 py-4" />
+                        </DialogContent>
+
+                    </Dialog>
+
+                </div>
             </div>
         </main>
     );

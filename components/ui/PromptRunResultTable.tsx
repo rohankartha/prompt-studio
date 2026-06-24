@@ -49,7 +49,8 @@ export default function PromptRunResultsTable() {
 
     // State variables storing evaluation configurations
     const [judgeModel, setJudgeModel] = useState("");
-    const [judgeType, setJudgeType] = useState("");
+    const [evaluationType, setEvaluationType] = useState("");
+    const [metric, setMetric] = useState("");
 
     // State variables of selected run
     const [datasetId, setDatasetId] = useState("");
@@ -98,21 +99,17 @@ export default function PromptRunResultsTable() {
 
     async function runEvaluation(run: RunTableRow) {
 
-        if (!judgeModel) {
-            toast.error("Please select a judge model.");
-            return;
-        }
-
-        if (!judgeType) {
-            toast.error("Please select a judge type.");
+        if (!evaluationType) {
+            toast.error("Please select an evaluation type.");
             return;
         }
 
         const payload = {
             runId: run.id,
             datasetId: datasetId,
+            evaluationType: evaluationType,
             judgeModel: judgeModel,
-            judgeType: judgeType
+            metric: metric
         }
 
         const response = await fetch("/api/evaluations", {
@@ -132,7 +129,7 @@ export default function PromptRunResultsTable() {
 
         setDatasetId("");
         setJudgeModel("");
-        setJudgeType("");
+        setEvaluationType("");
     }
 
 
@@ -154,7 +151,54 @@ export default function PromptRunResultsTable() {
         );
     }
 
-    const columns = Object.keys(runResults[0]) as (keyof RunTableRow)[];
+    const hiddenColumns = new Set<keyof RunTableRow>(["id"]);
+    const columns = (Object.keys(runResults[0] ?? {}) as (keyof RunTableRow)[]).filter((column) => !hiddenColumns.has(column));
+
+    const getDescription = (type: string) => {
+        switch (type) {
+            case "EXACT_MATCH":
+                return "Compares expected and actual outputs character-for-character.";
+            case "LLM_AS_A_JUDGE":
+                return "Uses an LLM to evaluate output quality against criteria.";
+            case "METRIC_BASED":
+                return "Applies deterministic scoring metrics without model reasoning.";
+            case "EMBEDDING_SIMILARITY":
+                return "Measures semantic similarity using vector embeddings";
+            default:
+                return "Select an evaluation method.";
+        }
+    };
+
+    const getMetricDescription = (type: string) => {
+        switch (type) {
+            case "bleu":
+                return "Measures n-gram overlap between the generated and expected text. Commonly used for translation and text generation tasks.";
+
+            case "rouge-n":
+                return "Measures recall of matching n-grams between the generated and expected outputs. Often used for summarization evaluation.";
+
+            case "rouge-l":
+                return "Measures similarity using the longest common subsequence between texts, capturing sentence-level structure and ordering.";
+
+            case "meteor":
+                return "Evaluates text similarity using exact matches, stemming, synonyms, and word order. It often correlates better with human judgment than BLEU.";
+
+            case "levenstein":
+                return "Measures the number of character-level edits (insertions, deletions, or substitutions) needed to transform one text into another.";
+
+            default:
+                return "Select a metric to view its description.";
+        }
+    };
+
+    const resetDialog = () => {
+        setDatasetId("");
+        setEvaluationType("");
+        setJudgeModel("");
+        setSelectedRun(null);
+        setMetric("");
+    };
+
 
     return (
         <div className="overflow-hidden rounded-2xl border bg-background shadow-sm">
@@ -212,7 +256,13 @@ export default function PromptRunResultsTable() {
 
                 <Dialog
                     open={evalDialogOpen}
-                    onOpenChange={setEvalDialogOpen}
+                    onOpenChange={(open) => {
+                        setEvalDialogOpen(open);
+
+                        if (!open) {
+                            resetDialog();
+                        }
+                    }}
                 >
                     <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-lg rounded-2xl border-zinc-200 p-0 shadow-xl">
                         <div className="border-b border-zinc-200 px-6 py-5">
@@ -260,60 +310,137 @@ export default function PromptRunResultsTable() {
 
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium text-zinc-700">
-                                    Judge Model
+                                    Evaluation Method
                                 </Label>
 
                                 <Select
-                                    value={judgeModel}
-                                    onValueChange={(model) => setJudgeModel(model)}
+                                    value={evaluationType}
+                                    onValueChange={(type) => setEvaluationType(type)}
                                 >
                                     <SelectTrigger className="h-11 rounded-xl border-zinc-200 bg-white shadow-sm">
-                                        <SelectValue placeholder="Choose model" />
+                                        <SelectValue placeholder="Choose evaluation method" />
                                     </SelectTrigger>
 
                                     <SelectContent>
-                                        <SelectItem value="gpt-4o-mini">
-                                            GPT-4o Mini
-                                        </SelectItem>
-                                        <SelectItem value="gpt-4o">
-                                            GPT-4o
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
 
-                                <p className="text-xs text-zinc-500">
-                                    Used when the judge type requires model-based evaluation.
-                                </p>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium text-zinc-700">
-                                    Judge Type
-                                </Label>
-
-                                <Select
-                                    value={judgeType}
-                                    onValueChange={(type) => setJudgeType(type)}
-                                >
-                                    <SelectTrigger className="h-11 rounded-xl border-zinc-200 bg-white shadow-sm">
-                                        <SelectValue placeholder="Choose judge type" />
-                                    </SelectTrigger>
-
-                                    <SelectContent>
                                         <SelectItem value="EXACT_MATCH">
                                             Exact Match
                                         </SelectItem>
-                                        <SelectItem value="LLM">
-                                            LLM Judge
+
+                                        <SelectItem value="LLM_AS_A_JUDGE">
+                                            LLM-as-a-Judge
                                         </SelectItem>
+
+                                        <SelectItem value="EMBEDDING_SIMILARITY">
+                                            Embedding Similarity
+                                        </SelectItem>
+
+                                        <SelectItem value="METRIC_BASED">
+                                            Metric-based
+                                        </SelectItem>
+
+
                                     </SelectContent>
                                 </Select>
 
                                 <p className="text-xs text-zinc-500">
-                                    Exact Match compares expected and actual outputs. LLM Judge uses a model to score quality.
+                                    {getDescription(evaluationType)}
                                 </p>
+
+
                             </div>
+
+
+                            {(evaluationType == "METRIC_BASED" || evaluationType == "LLM_AS_A_JUDGE") && (
+                                <div className="space-y-2">
+
+                                    {/* Dropdown for metrics */}
+                                    {evaluationType === "METRIC_BASED" && (
+                                        <>
+                                            <Label className="text-sm font-medium text-zinc-700">
+                                                Metrics
+                                            </Label>
+
+                                            <Select
+                                                value={metric}
+                                                onValueChange={(metric) => setMetric(metric)}
+                                            >
+                                                <SelectTrigger className="h-11 rounded-xl border-zinc-200 bg-white shadow-sm">
+                                                    <SelectValue placeholder="Choose model" />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+
+                                                    <SelectItem value="bleu">
+                                                        BLEU
+                                                    </SelectItem>
+
+                                                    <SelectItem value="rouge-n">
+                                                        ROUGE-n
+                                                    </SelectItem>
+
+                                                    <SelectItem value="rouge-l">
+                                                        ROUGE-l
+                                                    </SelectItem>
+
+                                                    <SelectItem value="meteor">
+                                                        METEOR
+                                                    </SelectItem>
+
+                                                    <SelectItem value="levenstein">
+                                                        Levenstein
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+
+                                            <p className="text-xs text-zinc-500">
+                                                {getMetricDescription(metric)}
+                                            </p>
+                                        </>
+                                    )}
+
+                                    {evaluationType === "LLM_AS_A_JUDGE" && (
+                                        <>
+                                            <Label className="text-sm font-medium text-zinc-700">
+                                                Model
+                                            </Label>
+
+                                            <Select
+                                                value={judgeModel}
+                                                onValueChange={(model) => setJudgeModel(model)}
+                                            >
+                                                <SelectTrigger className="h-11 rounded-xl border-zinc-200 bg-white shadow-sm">
+                                                    <SelectValue placeholder="Choose model" />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    <SelectItem value="gpt-4o-mini">
+                                                        GPT-4o Mini
+                                                    </SelectItem>
+                                                    <SelectItem value="gpt-4o">
+                                                        GPT-4o
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </>
+                                    )}
+
+                                    
+                                </div>
+                            )}
+
+
+
+
+
+
+
+
                         </div>
+
+
+
+
 
                         <DialogFooter className="border-t border-zinc-200 bg-zinc-50 px-6 py-4">
                             <Button
@@ -322,7 +449,7 @@ export default function PromptRunResultsTable() {
                                 onClick={
                                     () => {
                                         setEvalDialogOpen(false)
-                                        setDatasetId("");
+                                        resetDialog();
                                     }}
                             >
                                 Cancel
